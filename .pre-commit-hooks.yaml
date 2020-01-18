@@ -1,0 +1,5 @@
+- id: stdlib-linter
+  name: Makefile linter/analyzer
+  entry: stdlib-linter
+  language: golang
+  pass_filenames: false
