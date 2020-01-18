@@ -1,5 +1,6 @@
 - id: stdlib-linter
-  name: Makefile linter/analyzer
+  name: stdlib-linter validates syntactic restrictions in hsecode.com/stdlib projects
   entry: stdlib-linter
   language: golang
   pass_filenames: false
+  files: ".+\.go$"
