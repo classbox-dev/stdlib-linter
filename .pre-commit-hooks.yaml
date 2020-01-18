@@ -1,5 +1,5 @@
 - id: stdlib-linter
-  name: stdlib-linter validates syntactic restrictions in hsecode.com/stdlib projects
+  description: stdlib-linter validates syntactic restrictions in hsecode.com/stdlib projects
   entry: stdlib-linter
   language: golang
   pass_filenames: false
