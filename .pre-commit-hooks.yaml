@@ -8,7 +8,7 @@
 - id: gofmt
   name: gofmt
   description: "Runs `gofmt`, requires golang"
-  entry: misc/gofmt.sh
+  entry: misc/gofmt.sh .
   language: script
   pass_filenames: false
   files: \.go$
