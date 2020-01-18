@@ -3,4 +3,4 @@
   entry: stdlib-linter
   language: golang
   pass_filenames: false
-  files: ".+\.go$"
+  files: .+\.go$
