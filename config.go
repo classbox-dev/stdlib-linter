@@ -10,6 +10,7 @@ var allowedPackages = map[string]sentinel{
 	"math":      {},
 	"math/rand": {},
 	"math/bits": {},
+	"github.com/cheekybits/genny/generic": {},
 }
 
 var allowedPackagePrefixes = []string{
