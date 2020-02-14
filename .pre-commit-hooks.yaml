@@ -7,8 +7,22 @@
   files: \.go$
 - id: gofmt
   name: gofmt
-  description: "Runs `gofmt`, requires golang"
-  entry: misc/gofmt.sh .
-  language: script
+  description: "Runs `gofmt`"
+  entry: pygofmt
+  language: python
+  pass_filenames: true
+  files: \.go$
+- id: generate
+  name: go generate
+  description: "Runs `go generate` for all packages"
+  entry: go generate ./...
+  language: system
+  pass_filenames: false
+  files: \.go$
+- id: no-untracked
+  name: check untracked files
+  description: "Prevents commits with untracked files"
+  entry: pyuntracked
+  language: python
   pass_filenames: false
   files: \.go$
