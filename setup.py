@@ -1,10 +1,10 @@
 from setuptools import setup
 
 setup(
-    name='stdlib-linters',
-    packages=['linters'],
+    name='stdlib-hooks',
+    packages=['hooks'],
     entry_points={'console_scripts': [
-        'pygofmt = linters.gofmt:main',
-        'pyuntracked = linters.untracked:main',
+        'pygofmt = hooks.gofmt:main',
+        'pyuntracked = hooks.untracked:main',
     ]},
 )

@@ -3,15 +3,39 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
-	"strings"
+	"path/filepath"
 )
 
 type Visitor struct {
-	pkg   string
-	fset  *token.FileSet
-	stack []ast.Node
-	Errs  []LintError
+	pkg    string
+	linter *Linter
+	file   *ast.File
+	fset   *token.FileSet
+	stack  []ast.Node
+	errors []*LintError
+}
+
+func NewVisitor(path string, linter *Linter) (*Visitor, error) {
+	fset := token.NewFileSet() // positions are relative to fset
+	file, err := parser.ParseFile(fset, path, nil, 0)
+	if err != nil {
+		return nil, err
+	}
+	pkg := filepath.Dir(path)
+	visitor := &Visitor{
+		pkg:    pkg,
+		linter: linter,
+		file:   file,
+		fset:   fset,
+	}
+	return visitor, nil
+}
+
+func (v *Visitor) Walk() []*LintError {
+	ast.Walk(v, v.file)
+	return v.errors
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
@@ -21,56 +45,34 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	}
 
 	pos := v.fset.Position(node.Pos())
-	idBlackList, _ := bannedIDs[v.pkg]
-	callBlackList, _ := bannedCalls[v.pkg]
 
 	v.stack = append(v.stack, node)
 
 	switch n := node.(type) {
-	case *ast.BasicLit:
-		if len(v.stack) < 2 {
-			break
+
+	case *ast.ImportSpec:
+		if !v.linter.IsValidPackage(n.Path.Value) {
+			err := &LintError{pos, fmt.Errorf("%s package is banned", n.Path.Value)}
+			v.errors = append(v.errors, err)
 		}
-		outer := v.stack[len(v.stack)-2]
-		if _, ok := outer.(*ast.ImportSpec); !ok {
-			break
-		}
-		// <- import literal
-		if !isPackageAllowed(n.Value) {
-			err := LintError{pos, fmt.Errorf("%s package is banned", n.Value)}
-			v.Errs = append(v.Errs, err)
-		}
+
 	case *ast.Ident:
 		// <- identifier
-		for _, id := range idBlackList {
-			if n.Name == id {
-				err := LintError{pos, fmt.Errorf("`%s` is not allowed in %s", n.Name, v.pkg)}
-				v.Errs = append(v.Errs, err)
-			}
+		if !v.linter.IsValidId(v.pkg, n.Name) {
+			err := &LintError{pos, fmt.Errorf("`%s` is not allowed in %s", n.Name, v.pkg)}
+			v.errors = append(v.errors, err)
 		}
+
 	case *ast.CallExpr:
 		ie, ok := n.Fun.(*ast.Ident)
 		if !ok {
 			break
 		}
 		// <- function call
-		for _, call := range callBlackList {
-			if ie.Name == call {
-				err := LintError{pos, fmt.Errorf("`%s()` call is not allowed in %s", ie.Name, v.pkg)}
-				v.Errs = append(v.Errs, err)
-			}
+		if !v.linter.IsValidCall(v.pkg, ie.Name) {
+			err := &LintError{pos, fmt.Errorf("`%s()` call is not allowed in %s", ie.Name, v.pkg)}
+			v.errors = append(v.errors, err)
 		}
 	}
 	return v
-}
-
-func isPackageAllowed(importLit string) bool {
-	pkg := strings.Replace(importLit, `"`, "", -1)
-	for _, prefix := range allowedPackagePrefixes {
-		if strings.HasPrefix(pkg, prefix) {
-			return true
-		}
-	}
-	_, ok := allowedPackages[pkg]
-	return ok
 }

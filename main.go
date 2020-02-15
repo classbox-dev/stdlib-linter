@@ -1,33 +1,14 @@
 package main
 
 import (
-	"errors"
-	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
+	"github.com/jessevdk/go-flags"
 	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
-func parseRoot() (string, error) {
-	flag.Parse()
-	switch {
-	case flag.NArg() == 0:
-		return ".", nil
-	case flag.NArg() == 1:
-		path := flag.Args()[0]
-		if info, err := os.Stat(path); err != nil || !info.IsDir() {
-			return "", fmt.Errorf("invalid directory path: %v", path)
-		}
-		return path, nil
-	default:
-		return "", errors.New("single positional argument is required")
-	}
-}
 
 type LintError struct {
 	Pos token.Position
@@ -38,38 +19,35 @@ func (e *LintError) Error() string {
 	return fmt.Sprintf("%s:%d: %s", e.Pos.Filename, e.Pos.Line, e.Err.Error())
 }
 
-func processFile(path string) ([]LintError, error) {
-	fset := token.NewFileSet() // positions are relative to fset
-	f, err := parser.ParseFile(fset, path, nil, 0)
-	if err != nil {
-		return nil, err
-	}
-	pkg := filepath.Base(filepath.Dir(path))
-	v := Visitor{fset: fset, pkg: pkg}
-	ast.Walk(&v, f)
-	return v.Errs, nil
-}
-
 func init() {
-	log.SetFlags(0)
+	log.SetFlags(0) // do not log time
 	log.SetOutput(os.Stderr)
-	flag.Usage = usage
-}
-
-func usage() {
-	log.Println("usage: stdlib-linter [path]")
-	flag.PrintDefaults()
 }
 
 func main() {
-	root, err := parseRoot()
-	if err != nil {
-		log.Fatal(err)
+	var options Options
+	flagParser := flags.NewParser(&options, flags.Default)
+	if _, err := flagParser.Parse(); err != nil {
+		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
 	}
 
-	var lintErrors []LintError
+	if options.Args.Root == "" {
+		options.Args.Root = "."
+	}
+	if info, err := os.Stat(options.Args.Root); err != nil || !info.IsDir() {
+		log.Fatalf("invalid directory path: %v", options.Args.Root)
+	}
 
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	config := options.GetConfig()
+	linter := NewLinter(config)
+
+	var lintErrors []*LintError
+
+	err := filepath.Walk(options.Args.Root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("[WARN] %v", err)
 			return nil
@@ -77,11 +55,12 @@ func main() {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-		es, err := processFile(path)
+		visitor, err := NewVisitor(path, linter)
 		if err != nil {
 			return err
 		}
-		lintErrors = append(lintErrors, es...)
+		errors := visitor.Walk()
+		lintErrors = append(lintErrors, errors...)
 		return nil
 	})
 	if err != nil {

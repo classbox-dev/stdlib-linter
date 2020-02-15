@@ -1,22 +1,24 @@
 package main
 
-type sentinel struct{}
-
-var allowedPackages = map[string]sentinel{
-	"errors":    {},
-	"fmt":       {},
-	"strings":   {},
-	"strconv":   {},
-	"math":      {},
-	"math/rand": {},
-	"math/bits": {},
-	"github.com/cheekybits/genny/generic": {},
+type Config struct {
+	Packages        []string            `yaml:"packages"`
+	PackagePrefixes []string            `yaml:"package_prefixes"`
+	BannedIds       map[string][]string `yaml:"banned_ids"`
+	BannedCalls     map[string][]string `yaml:"banned_calls"`
 }
 
-var allowedPackagePrefixes = []string{
-	"hsecode.com/stdlib",
+var defaultConfig = Config{
+	Packages: []string{
+		"fmt",
+		"math",
+		"errors",
+		"strings",
+		"strconv",
+		"math/rand",
+		"math/bits",
+		"github.com/cheekybits/genny/generic",
+	},
+	PackagePrefixes: []string{"hsecode.com/stdlib"},
+	BannedIds:       map[string][]string{},
+	BannedCalls:     map[string][]string{},
 }
-
-var bannedIDs = map[string][]string{}
-
-var bannedCalls = map[string][]string{}
