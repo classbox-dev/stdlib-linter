@@ -14,7 +14,7 @@ type args struct {
 }
 
 type Options struct {
-	ConfigUrl  string `short:"u" env:"CONFIG_URL" description:"URL with remote JSON config" default:"https://hsecode.com/stdlib/docs/linter.json"`
+	ConfigUrl  string `short:"u" env:"CONFIG_URL" description:"URL with remote JSON config" default:"https://hsecode.com/stdlib/docs/linter.yaml"`
 	ConfigPath string `short:"c" env:"CONFIG_PATH" description:"path to local config that will be used instead of remote one"`
 	Args       args   `positional-args:"args"`
 	Verbose    bool   `short:"v" description:"print more errors"`
