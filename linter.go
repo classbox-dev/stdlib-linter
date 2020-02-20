@@ -16,14 +16,16 @@ func (s Set) Contains(item string) bool {
 }
 
 type Linter struct {
+	Root                   string
 	allowedPackages        Set
 	allowedPackagePrefixes []string
 	bannedIds              map[string]Set
 	bannedCalls            map[string]Set
 }
 
-func NewLinter(config *Config) *Linter {
+func NewLinter(root string, config *Config) *Linter {
 	linter := new(Linter)
+	linter.Root = root
 	linter.allowedPackages = Set{}
 	for _, p := range config.Packages {
 		linter.allowedPackages[p] = sentinel{}

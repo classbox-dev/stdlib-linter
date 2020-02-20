@@ -43,7 +43,7 @@ func main() {
 	}
 
 	config := options.GetConfig()
-	linter := NewLinter(config)
+	linter := NewLinter(options.Args.Root, config)
 
 	var lintErrors []*LintError
 

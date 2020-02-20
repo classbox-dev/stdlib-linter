@@ -23,7 +23,10 @@ func NewVisitor(path string, linter *Linter) (*Visitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	pkg := filepath.Dir(path)
+	pkg, err := filepath.Rel(linter.Root, filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
 	visitor := &Visitor{
 		pkg:    pkg,
 		linter: linter,
