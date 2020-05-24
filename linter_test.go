@@ -1,10 +1,11 @@
 package main_test
 
 import (
-	linter "github.com/mkuznets/stdlib-linter"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	linter "github.com/mkuznets/stdlib-linter"
 )
 
 func TestSubpaths(t *testing.T) {

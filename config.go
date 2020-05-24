@@ -1,10 +1,11 @@
 package main
 
 type Config struct {
-	Packages        []string            `yaml:"packages"`
-	PackagePrefixes []string            `yaml:"package_prefixes"`
-	BannedIds       map[string][]string `yaml:"banned_ids"`
-	BannedCalls     map[string][]string `yaml:"banned_calls"`
+	Packages         []string            `yaml:"packages"`
+	PackagePrefixes  []string            `yaml:"package_prefixes"`
+	BannedIds        map[string][]string `yaml:"banned_ids"`
+	BannedCalls      map[string][]string `yaml:"banned_calls"`
+	GoroutinesBanned bool                `yaml:"goroutines_banned"`
 }
 
 var defaultConfig = Config{

@@ -2,11 +2,12 @@ package main
 
 import (
 	"context"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 type args struct {

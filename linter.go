@@ -21,11 +21,14 @@ type Linter struct {
 	allowedPackagePrefixes []string
 	bannedIds              map[string]Set
 	bannedCalls            map[string]Set
+	goroutinesBanned       bool
 }
 
 func NewLinter(root string, config *Config) *Linter {
 	linter := new(Linter)
 	linter.Root = root
+	linter.goroutinesBanned = config.GoroutinesBanned
+
 	linter.allowedPackages = Set{}
 	for _, p := range config.Packages {
 		linter.allowedPackages[p] = sentinel{}
@@ -78,6 +81,10 @@ func (linter *Linter) IsValidCall(path string, callLiteral string) bool {
 		}
 	}
 	return true
+}
+
+func (linter *Linter) AreGoroutinesBanned() bool {
+	return linter.goroutinesBanned
 }
 
 func Subpaths(path string) []string {

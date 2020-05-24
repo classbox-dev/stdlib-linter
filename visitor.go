@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -76,6 +77,12 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 			err := &LintError{pos, fmt.Errorf("`%s()` call is not allowed in %s", ie.Name, v.pkg)}
 			v.errors = append(v.errors, err)
 		}
+	case *ast.GoStmt:
+		if v.linter.AreGoroutinesBanned() {
+			err := &LintError{pos, errors.New("goroutines are not allowed")}
+			v.errors = append(v.errors, err)
+		}
+
 	}
 	return v
 }

@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/jessevdk/go-flags"
 	"go/token"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/jessevdk/go-flags"
 )
 
 type LintError struct {
