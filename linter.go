@@ -74,6 +74,10 @@ func (linter *Linter) IsValidId(path string, idLiteral string) bool {
 }
 
 func (linter *Linter) IsValidCall(path string, callLiteral string) bool {
+	bannedIds, ok := linter.bannedCalls["*"]
+	if ok && bannedIds.Contains(callLiteral) {
+		return false
+	}
 	for _, pkg := range Subpaths(path) {
 		bannedCalls, ok := linter.bannedCalls[pkg]
 		if ok && bannedCalls.Contains(callLiteral) {
