@@ -64,6 +64,10 @@ func (linter *Linter) IsValidPackage(importLiteral string) bool {
 }
 
 func (linter *Linter) IsValidId(path string, idLiteral string) bool {
+	bannedIds, ok := linter.bannedIds["*"]
+	if ok && bannedIds.Contains(idLiteral) {
+		return false
+	}
 	for _, pkg := range Subpaths(path) {
 		bannedIds, ok := linter.bannedIds[pkg]
 		if ok && bannedIds.Contains(idLiteral) {
@@ -74,8 +78,8 @@ func (linter *Linter) IsValidId(path string, idLiteral string) bool {
 }
 
 func (linter *Linter) IsValidCall(path string, callLiteral string) bool {
-	bannedIds, ok := linter.bannedCalls["*"]
-	if ok && bannedIds.Contains(callLiteral) {
+	bannedCalls, ok := linter.bannedCalls["*"]
+	if ok && bannedCalls.Contains(callLiteral) {
 		return false
 	}
 	for _, pkg := range Subpaths(path) {
