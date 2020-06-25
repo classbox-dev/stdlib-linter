@@ -1,26 +1,30 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"path/filepath"
 )
 
 type Visitor struct {
-	pkg    string
-	linter *Linter
-	file   *ast.File
-	fset   *token.FileSet
-	stack  []ast.Node
-	errors []*LintError
+	pkg      string
+	linter   *Linter
+	file     *ast.File
+	fset     *token.FileSet
+	stack    []ast.Node
+	errors   []*LintError
+	sanitise bool
 }
 
-func NewVisitor(path string, linter *Linter) (*Visitor, error) {
+func NewVisitor(path string, linter *Linter, sanitise bool) (*Visitor, error) {
 	fset := token.NewFileSet() // positions are relative to fset
-	file, err := parser.ParseFile(fset, path, nil, 0)
+	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
@@ -29,10 +33,11 @@ func NewVisitor(path string, linter *Linter) (*Visitor, error) {
 		return nil, err
 	}
 	visitor := &Visitor{
-		pkg:    pkg,
-		linter: linter,
-		file:   file,
-		fset:   fset,
+		pkg:      pkg,
+		linter:   linter,
+		file:     file,
+		fset:     fset,
+		sanitise: sanitise,
 	}
 	return visitor, nil
 }
@@ -40,6 +45,21 @@ func NewVisitor(path string, linter *Linter) (*Visitor, error) {
 func (v *Visitor) Walk() []*LintError {
 	ast.Walk(v, v.file)
 	return v.errors
+}
+
+func (v *Visitor) Source() ([]byte, error) {
+	var buf bytes.Buffer
+
+	node := &printer.CommentedNode{
+		Node:     v.file,
+		Comments: v.file.Comments,
+	}
+
+	if err := printer.Fprint(&buf, v.fset, node); err != nil {
+		return nil, fmt.Errorf("could not sanitise %s: %v", v.pkg, err)
+	}
+
+	return format.Source(buf.Bytes())
 }
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
@@ -72,6 +92,11 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 		if !ok {
 			break
 		}
+
+		if v.sanitise && ie.Name == "panic" {
+			hidePanicArgs(n)
+		}
+
 		// <- function call
 		if !v.linter.IsValidCall(v.pkg, ie.Name) {
 			err := &LintError{pos, fmt.Errorf("`%s()` call is not allowed in %s", ie.Name, v.pkg)}
@@ -85,4 +110,47 @@ func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 
 	}
 	return v
+}
+
+func hidePanicArgs(node *ast.CallExpr) {
+	prevArgs := node.Args
+
+	replacement := &ast.CallExpr{
+		Fun: &ast.FuncLit{
+			Type: &ast.FuncType{
+				Params: &ast.FieldList{
+					List: nil,
+				},
+				Results: &ast.FieldList{
+					List: []*ast.Field{{
+						Type: &ast.Ident{
+							Name: "string",
+						},
+					}},
+				},
+			},
+			Body: &ast.BlockStmt{
+				List: []ast.Stmt{
+					&ast.AssignStmt{
+						Lhs: []ast.Expr{&ast.Ident{
+							Name: "_",
+						}},
+						Tok: token.ASSIGN,
+						Rhs: prevArgs,
+					},
+					&ast.ReturnStmt{
+						Results: []ast.Expr{
+							&ast.BasicLit{
+								Kind:  token.STRING,
+								Value: "\"panic occured\"",
+							},
+						},
+					},
+				},
+			},
+		},
+		Args: nil,
+	}
+
+	node.Args = []ast.Expr{replacement}
 }

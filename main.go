@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"go/token"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -56,11 +57,22 @@ func main() {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
 			return nil
 		}
-		visitor, err := NewVisitor(path, linter)
+		visitor, err := NewVisitor(path, linter, options.Sanitise)
 		if err != nil {
 			return err
 		}
 		errors := visitor.Walk()
+
+		if options.Sanitise && len(errors) == 0 {
+			src, err := visitor.Source()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := ioutil.WriteFile(path, src, os.FileMode(0644)); err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		lintErrors = append(lintErrors, errors...)
 		return nil
 	})

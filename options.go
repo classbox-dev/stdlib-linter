@@ -19,6 +19,7 @@ type Options struct {
 	ConfigPath string `short:"c" env:"CONFIG_PATH" description:"path to local config that will be used instead of remote one"`
 	Args       args   `positional-args:"args"`
 	Verbose    bool   `short:"v" description:"print more errors"`
+	Sanitise   bool   `long:"sanitise" description:"remove dangerous code and overwrite files in-place"`
 }
 
 func (opts *Options) GetConfig() *Config {
